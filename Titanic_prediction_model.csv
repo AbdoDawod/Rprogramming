@@ -1,0 +1,197 @@
+---
+title: "Titanic: Machine Learning from Disaster"
+author: "Abdaljbbar B. A. Dawod"
+date: "10th September, 2020"
+output:
+  html_document:
+    df_print: paged
+---
+To build a prediction model in __R__, several steps should be performed sequentially. This project is structured in a way that will lead us to extract  a prediction model by utilizing the provided datasets for training and testing purposes. Therefore, this project is arranged as:
+
+1. Import CSV-formats datasets into __R__.
+2. Investigate the existing structure of the imported dataset.
+3. Create appropriate __descriptive statistics__ for the different variables in step __1__.
+4. Transform variables that do not provide enough information or we expect additional information if the existing variable has been transformed. 
+5. Build the model according to the response variable and explanatory variables, e.g., Linear regression, non-linear regression, poisson regression, logistic regression, etc.
+6. Train the model using the train dataset.
+7. Estimate the mean squared error of the model.
+8. Use the model in (5) to predict the future values of the response variable when the explanatory variables are provided.
+
+Reading dataset into R environment
+```{r}
+train = read.csv("D:\\Datasets\\Titanic\\train.csv")
+```
+
+Show the structure of the loaded dataset
+```{r}
+str(train)    #the structure of our data
+```
+
+# Data transformation.
+
+Changing the Structure of some variables from integer to __factor-type__. 
+
+```{r}
+lab = c("No", "Yes")
+train$Survived = factor(train$Survived, levels = c(0, 1), labels =lab)
+train$Pclass =  as.factor(train$Pclass)
+train$Name = as.character(train$Name)
+```
+
+Summarizing the loaded dataset.
+```{r}
+summary(train)
+```
+
+Loading the ggplot package for visualization purposes
+```{r, warning=FALSE}
+library(ggplot2)
+```
+
+Plotting  the number of survived passengers _Vs_ dead passengers
+```{r}
+ggplot(data = train, aes(x = Survived, fill = Survived)) + geom_bar() + ylab("Total Counts")
+```
+
+Plotting the survival status passengers according to their class
+```{r}
+ggplot(data = train, aes(x = Pclass, fill = Survived)) + geom_bar() + ylab("Total Counts")
+```
+
+Plotting the survival status of the passengers  according to the gender
+```{r}
+ggplot(data = train, aes(x = Sex, fill = Survived)) + geom_bar() + ylab("Total Counts")
+```
+
+Plotting the survival status of the passangers according to the age
+```{r}
+ggplot(data = train, aes(y = Age, x = Survived)) + geom_boxplot(fill="lightblue")
+```
+
+
+# Extracting titles from the name variable.
+
+```{r, warning=F}
+library(stringr)
+ExtractTitle = function(name)
+{
+  Name = as.character(name)
+  if (length(grep("Miss.", Name)) > 0)
+    return("Miss.")
+  else if (length(grep("Mrs.", Name)) > 0)
+    return("Mrs.")
+  else if (length(grep("Master.", Name)) > 0)
+    return("Master.")
+  else if (length(grep("Mr.", Name)) > 0)
+    return("Mr.")
+  else
+    return("Other")
+}
+```
+
+
+```{r}
+Title = character()
+for (i in 1:nrow(train))
+  Title = c(Title, ExtractTitle(train$Name[i]))
+table(Title)
+```
+
+transforming the variable "title"  from string to factor-type.
+```{r}
+train$Title = as.factor(Title)
+```
+
+printing the top 5 rows of train dataset.
+```{r}
+head(train,5)
+```
+
+Extracting boys from train dataset using the variable title. 
+
+```{r}
+boys = train[which(train$Title=="Master."),]
+```
+
+printing the number of rows of the extracted dataset __boys__.
+```{r}
+nrow(boys)
+```
+
+Summarizing the age of boys
+```{r}
+summary(boys$Age)
+```
+Creating age-group variable for the boys dataset
+```{r}
+boys$Agegroup = cut(boys$Age, breaks = c(0,4,7,12))
+```
+Printing a table view of the age-group.
+```{r}
+table(boys$Agegroup)
+```
+
+Visualizing the Age of boys 
+
+```{r}
+ggplot(data = boys, aes(x = Agegroup, fill=Survived))+
+geom_bar() +
+ggtitle("Survival status of boys according to their age groups.")+
+xlab("Age group")+
+ylab("Total count")
+```
+
+Extracting __Miss.__ from train dataset using the variable title. 
+
+```{r}
+miss = train[which(train$Title=="Miss."),]
+```
+
+Creating Age-group variable for the girls dataset
+```{r}
+miss$Agegroup = cut(miss$Age, breaks = c(0,15,30,40, 80))
+```
+Printing a table-view of age-groups with their associated counts.
+```{r}
+table(miss$Agegroup)
+```
+Plotting Survival status of misses according to their age groups
+```{r}
+ggplot(data = miss, aes(x = Agegroup, fill=Survived))+
+geom_bar() +
+ggtitle("Survival status of misses according to their age groups.")+
+xlab("Age group")+
+ylab("Total count")
+```
+
+
+Building a __logistic regression__ model to predict the probability of survived passanger relying on the passanger class, gender, age, siblings and parents as predictor variables.
+
+```{r}
+model = glm(Survived ~ Pclass + Sex + Pclass:Sex + Age + SibSp  , data = train, family = binomial(link = 'logit') )
+```
+
+Testing the accuracy of the built model using "test" dataset.
+```{r}
+test = read.csv("D:\\Datasets\\Titanic\\test.csv") 
+test$Pclass =  as.factor(test$Pclass)
+test$Name = as.character(test$Name)
+summary(model)
+anova(model, "Chisq")
+```
+
+Predicting the probability of survival status for the first 10 passangers
+```{r}
+result = predict(model, test, type = 'response')
+print(result[1:10])
+```
+
+Plotting the density of the prediction
+```{r}
+train$pred <- predict(model, newdata=train, type="response")
+test$pred <- predict(model, newdata=test, type="response")
+ggplot(train, aes(x=pred, color=Survived, linetype=Survived)) +
+geom_density()
+```
+
+##  --------------------------__End__ --------------------------                          
