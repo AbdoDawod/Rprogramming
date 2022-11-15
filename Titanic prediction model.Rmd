@@ -19,7 +19,7 @@ To build a prediction model in __R__, several steps should be performed sequenti
 
 Reading dataset into R environment
 ```{r}
-train = read.csv("D:\\Datasets\\Titanic\\train.csv")
+train = read.csv("train.csv")
 ```
 
 Show the structure of the loaded dataset
@@ -173,7 +173,7 @@ model = glm(Survived ~ Pclass + Sex + Pclass:Sex + Age + SibSp  , data = train, 
 
 Testing the accuracy of the built model using "test" dataset.
 ```{r}
-test = read.csv("D:\\Datasets\\Titanic\\test.csv") 
+test = read.csv("test.csv") 
 test$Pclass =  as.factor(test$Pclass)
 test$Name = as.character(test$Name)
 summary(model)
